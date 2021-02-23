@@ -103,3 +103,7 @@ ENV/
 
 # vscode
 .vscode/
+
+# playground
+play/
+.DS_Store
