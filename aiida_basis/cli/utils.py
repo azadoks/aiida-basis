@@ -46,7 +46,7 @@ def create_basis_set_from_directory(cls, label, dirpath, basis_type=None):
     :raises OSError: if the bases could not be parsed into a basis set.
     """
     try:
-        basis_set = cls.create_from_folder(dirpath, label, pseudo_type=basis_type)
+        basis_set = cls.create_from_folder(dirpath, label, basis_type=basis_type)
     except ValueError as exception:
         raise OSError(f'failed to parse bases from `{dirpath}`: {exception}') from exception
 

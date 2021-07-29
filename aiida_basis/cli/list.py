@@ -27,7 +27,7 @@ def get_basis_sets_builder():
 @cmd_root.command('list')
 @options_core.PROJECT(type=click.Choice(PROJECTIONS_VALID), default=PROJECTIONS_DEFAULT)
 @options_core.RAW()
-@options.FAMILY_TYPE(default=None, help='Filter for families of with this type string.')
+@options.BASIS_SET_TYPE(default=None, help='Filter for families of with this type string.')
 @decorators.with_dbenv()
 def cmd_list(project, raw, basis_set_type):
     """List installed basis sets."""

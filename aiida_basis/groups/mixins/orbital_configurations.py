@@ -16,7 +16,6 @@ class RecommendedOrbitalConfigurationMixin:
     """
 
     _key_orbital_configurations = '_orbital_configurations'
-    # _key_default_stringency = '_default_stringency'
 
     @classmethod
     def validate_orbital_configurations(cls, elements: set, orbital_configurations: dict) -> None:

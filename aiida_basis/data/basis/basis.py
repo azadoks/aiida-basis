@@ -34,7 +34,7 @@ class BasisData(plugins.DataFactory('singlefile')):
             basis= existing[0]
         else:
             stream.seek(0)
-            basis= cls(stream, filename)
+            basis = cls(stream, filename)
  
         return basis
     @classmethod

@@ -4,10 +4,12 @@ import collections
 import json
 import os
 from typing import Sequence
+from importlib_resources import files
 
 from aiida.common.exceptions import ParsingError
 
 from aiida_basis.data.basis import PaoData
+from ...metadata import openmx as openmx_metadata
 from ..mixins import RecommendedOrbitalConfigurationMixin
 from .basis import BasisSet
 
@@ -46,7 +48,6 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
         '19': 'vps_pao2019/',
         '13': 'vps_pao2013/'
     }
-    metadata_dir = os.path.join(os.path.abspath(__file__), '../../metadata/openmx/')
 
     @classmethod
     def get_valid_labels(cls) -> Sequence[str]:
@@ -62,10 +63,15 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
         :returns: label.
         """
         return cls.label_template.format(
-            version=configuration.versioon,
+            version=configuration.version,
             protocol=configuration.protocol,
             hardness=configuration.hardness
         )
+
+    @classmethod
+    def get_configuration_metadata_filepath(cls, configuration: OpenmxConfiguration):
+        metadata_filename = f'{configuration.version}_{configuration.protocol}_{configuration.hardness}.json'
+        return files(openmx_metadata) / metadata_filename
 
     @classmethod
     def get_configuration_metadata(cls, configuration: OpenmxConfiguration):
@@ -73,11 +79,10 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
 
         :param configuration: OpenMX basis set configuration.
         :returns: metadata dictionary.
-        """
-        metadata_filename = f'{configuration.version}_{configuration.protocol}_{configuration.hardness}.json'
-        
+        """ 
+        metadata_filepath = cls.get_configuration_metadata_filepath(configuration)     
         try:
-            with open(cls.metadata_dir + metadata_filename, 'r') as stream:
+            with open(metadata_filepath, 'r') as stream:
                 metadata = json.load(stream)
         except OSError as exception:
             raise OSError(
@@ -111,44 +116,44 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
 
         return metadata
 
-    @classmethod
-    def get_url_file(cls, element: str, configuration: OpenmxConfiguration):
-        """Return the URL for the PAO file for a given basis set label and element.
+    # @classmethod
+    # def get_url_file(cls, element: str, configuration: OpenmxConfiguration):
+    #     """Return the URL for the PAO file for a given basis set label and element.
 
-        :param element: IUPAC element symbol.
-        :param configuration: basis set configuration.
-        :returns: the URL from which the PAO basis file can be downloaded.
-        :raises: `ValueError` if the configuration or the element symbol is invalid.
-        """
-        if configuration not in cls.valid_configurations:
-            raise ValueError(f'{cls.format_configuration_label(configuration)} is not a valid configuration')
+    #     :param element: IUPAC element symbol.
+    #     :param configuration: basis set configuration.
+    #     :returns: the URL from which the PAO basis file can be downloaded.
+    #     :raises: `ValueError` if the configuration or the element symbol is invalid.
+    #     """
+    #     if configuration not in cls.valid_configurations:
+    #         raise ValueError(f'{cls.format_configuration_label(configuration)} is not a valid configuration')
 
-        element_metadata = cls.get_pao_metadata(element, configuration)
+    #     element_metadata = cls.get_pao_metadata(element, configuration)
 
-        url = cls.url_base + cls.url_version[configuration.version] + f'{element}/' + element_metadata['filename']
+    #     url = cls.url_base + cls.url_version[configuration.version] + f'{element}/' + element_metadata['filename']
 
-        return url
+    #     return url
 
-    @classmethod
-    def get_urls_configuration(cls, configuration: OpenmxConfiguration):
-        """Return the URLs for all the PAO files of a given OpenMX basis set configuration.
+    # @classmethod
+    # def get_urls_configuration(cls, configuration: OpenmxConfiguration):
+    #     """Return the URLs for all the PAO files of a given OpenMX basis set configuration.
 
-        :param configuration: OpenMX basis set configuration.
-        :returns: list of URLs
-        :raises: `ValueError` is the configuration is invalid.
-        """
-        if configuration not in cls.valid_configurations:
-            raise ValueError(f'{cls.format_configuration_label(configuration)} is not a valid configuration')
+    #     :param configuration: OpenMX basis set configuration.
+    #     :returns: list of URLs
+    #     :raises: `ValueError` is the configuration is invalid.
+    #     """
+    #     if configuration not in cls.valid_configurations:
+    #         raise ValueError(f'{cls.format_configuration_label(configuration)} is not a valid configuration')
 
-        configuration_metadata = cls.get_configuration_metadata(configuration)
+    #     configuration_metadata = cls.get_configuration_metadata(configuration)
 
-        url_base = cls.url_base + cls.url_version[configuration.version]
+    #     url_base = cls.url_base + cls.url_version[configuration.version]
 
-        urls = [
-            url_base + f'{element}/' + metadata['filename'] for element, metadata in configuration_metadata.items()
-        ]
+    #     urls = [
+    #         url_base + f'{element}/' + metadata['filename'] for element, metadata in configuration_metadata.items()
+    #     ]
 
-        return urls
+    #     return urls
 
     @classmethod
     def get_md5s_configuration(cls, configuration: OpenmxConfiguration):

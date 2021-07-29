@@ -5,7 +5,7 @@ import shutil
 import click
 
 from aiida.cmdline.params.options import OverridableOption
-from .types import BasisSetTypeParam
+from .types import BasisSetTypeParam, BasisTypeParam
 
 __all__ = (
     'VERSION', 'PROTOCOL', 'TRACEBACK', 'BASIS_SET_TYPE', 'ARCHIVE_FORMAT'
@@ -34,6 +34,15 @@ BASIS_SET_TYPE = OverridableOption(
     default='basis.set',
     show_default=True,
     help='Choose the type of basis set to create.'
+)
+
+BASIS_TYPE = OverridableOption(
+    '-B',
+    '--basis-type',
+    type=BasisTypeParam(),
+    default='basis.basis',
+    show_default=True,
+    help='Choose the type of basis to use.'
 )
 
 ARCHIVE_FORMAT = OverridableOption(
