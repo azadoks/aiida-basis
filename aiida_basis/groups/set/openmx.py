@@ -2,11 +2,9 @@
 """Subclass of ``BasisSet`` designed to represent an OpenMX configuration."""
 import collections
 import json
-import os
+import pathlib
 from typing import Sequence
 from importlib_resources import files
-
-from aiida.common.exceptions import ParsingError
 
 from aiida_basis.data.basis import PaoData
 from ...metadata import openmx as openmx_metadata
@@ -15,16 +13,14 @@ from .basis import BasisSet
 
 __all__ = ('OpenmxConfiguration', 'OpenmxBasisSet')
 
-OpenmxConfiguration = collections.namedtuple(
-    'OpenmxConfiguration', ['version', 'protocol', 'hardness']
-)
+OpenmxConfiguration = collections.namedtuple('OpenmxConfiguration', ['version', 'protocol', 'hardness'])
 
 
 class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
     """Subclass of ``BasisSet`` designed to represent a set of OpenMX PAOs.
 
     The `OpenmxBasisSet` is essentially a `BasisSet` with some additional constraints. It can only
-    be used to contain the bases and corresponding metadata of the PAO basis sets included with 
+    be used to contain the bases and corresponding metadata of the PAO basis sets included with
     the OpenMX source code.
     """
 
@@ -32,26 +28,23 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
 
     label_template = 'OpenMX/{version}/{protocol}/{hardness}'
     default_configuration = OpenmxConfiguration('19', 'standard', 'soft')
-    
+
     valid_configurations = (
-        OpenmxConfiguration('19', 'quick', 'soft'),
-        OpenmxConfiguration('19', 'quick', 'hard'),
-        OpenmxConfiguration('19', 'standard', 'soft'),
-        OpenmxConfiguration('19', 'standard', 'hard'),
-        OpenmxConfiguration('19', 'precise', 'soft'),
-        OpenmxConfiguration('19', 'precise', 'hard')
-        # TODO: add 2013 configurations
+        OpenmxConfiguration('19', 'quick', 'soft'), OpenmxConfiguration('19', 'quick', 'hard'),
+        OpenmxConfiguration('19', 'standard', 'soft'), OpenmxConfiguration('19', 'standard', 'hard'),
+        OpenmxConfiguration('19', 'precise', 'soft'), OpenmxConfiguration('19', 'precise', 'hard')
+        # FUTURE: add 2013 configurations
     )
 
     url_base = 'https://t-ozaki.issp.u-tokyo.ac.jp/'
-    url_version = {
-        '19': 'vps_pao2019/',
-        '13': 'vps_pao2013/'
-    }
+    url_version = {'19': 'vps_pao2019/', '13': 'vps_pao2013/'}
 
     @classmethod
     def get_valid_labels(cls) -> Sequence[str]:
-        """Return the tuple of labels of all valid OpenMX basis set configurations."""
+        """Return the tuple of labels of all valid OpenMX basis set configurations.
+
+        :return: valid configuration labels.
+        """
         configurations = set(cls.valid_configurations)
         return tuple(cls.format_configuration_label(configuration) for configuration in configurations)
 
@@ -63,13 +56,16 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
         :returns: label.
         """
         return cls.label_template.format(
-            version=configuration.version,
-            protocol=configuration.protocol,
-            hardness=configuration.hardness
+            version=configuration.version, protocol=configuration.protocol, hardness=configuration.hardness
         )
 
     @classmethod
-    def get_configuration_metadata_filepath(cls, configuration: OpenmxConfiguration):
+    def get_configuration_metadata_filepath(cls, configuration: OpenmxConfiguration) -> pathlib.Path:
+        """Return the filepath to the metadata JSON of a given `OpenmxConfiguration`.
+
+        :param configuration: OpenMX basis configuration.
+        :return: metadata filepath.
+        """
         metadata_filename = f'{configuration.version}_{configuration.protocol}_{configuration.hardness}.json'
         return files(openmx_metadata) / metadata_filename
 
@@ -79,18 +75,18 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
 
         :param configuration: OpenMX basis set configuration.
         :returns: metadata dictionary.
-        """ 
-        metadata_filepath = cls.get_configuration_metadata_filepath(configuration)     
+        """
+        metadata_filepath = cls.get_configuration_metadata_filepath(configuration)
         try:
             with open(metadata_filepath, 'r') as stream:
                 metadata = json.load(stream)
+        except FileNotFoundError as exception:
+            raise FileNotFoundError(
+                f'Metadata JSON for {cls.format_configuration_label(configuration)} could not be found'
+            ) from exception
         except OSError as exception:
             raise OSError(
                 f'Error while opening the metadata file for {cls.format_configuration_label(configuration)}'
-            ) from exception
-        except FileNotFoundError as exception:
-            raise FileNotFoundError(
-                f'Metadata JSON for {cls.format_configuration_label(configuration)} could not be found'    
             ) from exception
 
         return metadata
@@ -105,7 +101,7 @@ class OpenmxBasisSet(RecommendedOrbitalConfigurationMixin, BasisSet):
         :raises: `ValueError` if the element does not exist in the configuration metadata.
         """
         configuration_metadata = cls.get_configuration_metadata(configuration)
-        
+
         try:
             metadata = configuration_metadata[element]
         except KeyError as exception:

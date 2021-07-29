@@ -18,6 +18,7 @@ StructureData = DataFactory('structure')
 
 class BasisSet(Group):
     """Group to represent a basis set.
+
     This is a base class that provides most of the functionality but does not actually define what type of basis
     can be contained. If ``_basis_types`` is not defined, any basis type is accepted in this
     basis set, as long as it is a subclass of ``BasisData``. Subclasses can limit which basis types can be
@@ -48,6 +49,7 @@ class BasisSet(Group):
     @classproperty
     def basis_types(cls):  # pylint: disable=no-self-argument
         """Return the basis types that this basis set accepts.
+
         :return: the tuple of subclasses of ``BasisData`` that this basis set can host nodes of. If it returns
             ``None``, that means all subclasses are supported.
         """
@@ -56,6 +58,7 @@ class BasisSet(Group):
     @classmethod
     def _validate_basis_type(cls, basis_type):
         """Validate the ``basis_type`` passed to ``parse_bases_from_directory``.
+
         :return: the basis type to be used.
         """
         if basis_type is None and len(cls._basis_types) > 1:
@@ -71,6 +74,7 @@ class BasisSet(Group):
     @classmethod
     def _validate_dirpath(cls, dirpath):
         """Validate the ``dirpath`` passed to ``parse_bases_from_directory``.
+
         :return: the directory path to be used.
         """
         if not os.path.isdir(dirpath):
@@ -86,14 +90,16 @@ class BasisSet(Group):
     @classmethod
     def parse_bases_from_directory(cls, dirpath, basis_type=None, deduplicate=True):
         """Parse the basis files in the given directory into a list of data nodes.
+
         .. note:: The directory pointed to by `dirpath` should only contain basis files. Optionally, it can
             contain just a single directory, that contains all the basis files. If any other files are stored
             in the basepath or the subdirectory, that cannot be successfully parsed as basis files the method
             will raise a ``ValueError``.
+
         :param dirpath: absolute path to a directory containing bases.
         :param basis_type: subclass of ``BasisData`` to be used for the parsed bases. If not specified and
-            the basis set only defines a single supported basis type in ``_basis_types`` then that will be used otherwise
-            a ``ValueError`` is raised.
+            the basis set only defines a single supported basis type in ``_basis_types`` then that will be used,
+            otherwise a ``ValueError`` is raised.
         :param deduplicate: if True, will scan database for existing bases of same type and with the same
             md5 checksum, and use that instead of the parsed one.
         :return: list of data nodes
@@ -148,12 +154,13 @@ class BasisSet(Group):
     @classmethod
     def create_from_folder(cls, dirpath, label, *, description='', basis_type=None, deduplicate=True):
         """Create a new ``BasisSet`` from the bases contained in a directory.
+
         :param dirpath: absolute path to the folder containing the UPF files.
         :param label: label to give to the ``BasisSet``, should not already exist.
         :param description: description to give to the basis set.
         :param basis_type: subclass of ``BasisData`` to be used for the parsed bases. If not specified and
-            the basis set only defines a single supported basis type in ``_basis_types`` then that will be used otherwise
-            a ``ValueError`` is raised.
+            the basis set only defines a single supported basis type in ``_basis_types`` then that will be used,
+            otherwise a ``ValueError`` is raised.
         :param deduplicate: if True, will scan database for existing bases of same type and with the same
             md5 checksum, and use that instead of the parsed one.
         :raises ValueError: if a ``BasisSet`` already exists with the given name.
@@ -184,6 +191,7 @@ class BasisSet(Group):
     @property
     def basis_type(self):
         """Return the type of the bases that are hosted by this basis set.
+
         :return: the basis type or ``None`` if none has been set yet.
         """
         return self.get_extra(self._key_basis_type, None)
@@ -202,7 +210,9 @@ class BasisSet(Group):
 
     def add_nodes(self, nodes):
         """Add a node or a set of nodes to the basis set.
+
         .. note: Each basis set instance can only contain a single basis for each element.
+
         :param nodes: a single or list of ``Node`` instances of type that is in ``BasisSet._basis_types``.
         :raises ModificationNotAllowed: if the basis set is not stored.
         :raises TypeError: if nodes are not an instance or list of instance of any of the classes listed by
@@ -233,6 +243,7 @@ class BasisSet(Group):
 
     def remove_nodes(self, nodes):
         """Remove a basis or a set of bases from the basis set.
+
         :param nodes: a single or list of ``BasisData`` instances or subclasses thereof.
         """
         super().remove_nodes(nodes)
@@ -253,6 +264,7 @@ class BasisSet(Group):
     @property
     def bases(self):
         """Return the dictionary of bases of this basis set indexed on the element symbol.
+
         :return: dictionary of element symbol mapping bases
         """
         if self._bases is None:
@@ -263,12 +275,14 @@ class BasisSet(Group):
     @property
     def elements(self):
         """Return the list of elements for which this basis set defines a basis.
+
         :return: list of element symbols
         """
         return list(self.bases.keys())
 
     def get_basis(self, element):
         """Return the basis for the given element.
+
         :param element: the element for which to return the corresponding basis.
         :return: basis instance if it exists
         :raises ValueError: if the basis set does not contain a basis for the given element
@@ -296,10 +310,11 @@ class BasisSet(Group):
     def get_bases(
         self,
         *,
-        elements: Union[List[str], Tuple[str]] = None,
+        elements: Union[List[str], Tuple[str]] = None,  # pylint: disable=unsubscriptable-object
         structure: StructureData = None,
     ) -> Mapping[str, StructureData]:
         """Return the mapping of kind names on basis data nodes for the given list of elements or structure.
+
         :param elements: list of element symbols.
         :param structure: the ``StructureData`` node.
         :return: dictionary mapping the kind names of a structure on the corresponding basis data nodes.

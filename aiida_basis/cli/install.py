@@ -5,7 +5,6 @@ import tempfile
 
 import click
 import requests
-from sqlalchemy.sql.elements import True_
 from tqdm import tqdm
 from aiida.cmdline.params import options as options_core
 from aiida.cmdline.params import types
@@ -16,52 +15,44 @@ from aiida_basis.groups.set.openmx import OpenmxBasisSet, OpenmxConfiguration
 
 from .params import options
 from .root import cmd_root
-from .utils import (attempt, create_basis_set_from_archive,
-                    create_basis_set_from_directory)
+from .utils import (attempt, create_basis_set_from_archive, create_basis_set_from_directory)
 
 
-def download_openmx(
-    configuration: OpenmxConfiguration,
-    dirpath: pathlib.Path,
-    traceback: bool = False
-) -> None:
+def download_openmx(configuration: OpenmxConfiguration, dirpath: pathlib.Path, traceback: bool = False) -> None:
     """Download the PAO files for an OpenMX configuration to a directory on disk.
-    
+
     :param configuration: the OpenMX configuration to download.
     :param dirpath: absolute dirpath to the directory in which to download the PAO files.
     :param traceback: boolean, if true, print the traceback if an exception occurs.
-    """    
+    """
     # pylint: disable=too-many-locals
 
-
     url_base = 'https://t-ozaki.issp.u-tokyo.ac.jp/'
-    url_version = {
-        '19': 'vps_pao2019/',
-        '13': 'vps_pao2013/'
-    }
+    url_version = {'19': 'vps_pao2019/', '13': 'vps_pao2013/'}
 
     metadata = OpenmxBasisSet.get_configuration_metadata(configuration)
 
     with attempt('downloading selected PAO basis set files... ', include_traceback=traceback):
-        pbar = tqdm(metadata.items(), desc="Downloading")
+        pbar = tqdm(metadata.items(), desc='Downloading')
         for element, element_metadata in pbar:
             pbar.set_description(f'Downloading {element_metadata["filename"]}')
-            
+
+            url_element = f'{url_base}/{url_version[configuration.version]}/{element}/'
+
             if element_metadata.get('hardness') == 'hard':
-                url = f'{url_base}/{url_version[configuration.version]}/{element}/{element}_Hard/{element_metadata["filename"]}'
+                url = url_element + f'{element}_Hard/{element_metadata["filename"]}'
             elif element_metadata.get('hardness') == 'soft':
-                url = f'{url_base}/{url_version[configuration.version]}/{element}/{element}_Soft/{element_metadata["filename"]}'
+                url = url_element + f'{element}_Soft/{element_metadata["filename"]}'
             elif element_metadata.get('open_core') is True:
-                url = f'{url_base}/{url_version[configuration.version]}/{element}/{element}_OC/{element_metadata["filename"]}'
+                url = url_element + f'{element}_OC/{element_metadata["filename"]}'
             elif element_metadata.get('open_core') is False:
-                url = f'{url_base}/{url_version[configuration.version]}/{element}/{element}/{element_metadata["filename"]}'
+                url = url_element + f'{element}/{element_metadata["filename"]}'
             else:
-                url = f'{url_base}/{url_version[configuration.version]}/{element}/{element_metadata["filename"]}'
-                
+                url = url_element + f'{element_metadata["filename"]}'
 
             response = requests.get(url)
             response.raise_for_status()
-            with open(dirpath / element_metadata["filename"], 'wb') as stream:
+            with open(dirpath / element_metadata['filename'], 'wb') as stream:
                 stream.write(response.content)
                 stream.flush()
 
@@ -131,7 +122,7 @@ def cmd_install_openmx(version, protocol, hardness, traceback):
 
     if configuration not in OpenmxBasisSet.valid_configurations:
         echo.echo_critical(f'{version} {hardness} {protocol} is not a valid OpenMX basis set configuration')
-    
+
     label = OpenmxBasisSet.format_configuration_label(configuration)
     description = f'OpenMX 20{version} {hardness} {protocol} installed with aiida-basis v{__version__}'
     metadata = OpenmxBasisSet.get_configuration_metadata(configuration)
@@ -142,18 +133,18 @@ def cmd_install_openmx(version, protocol, hardness, traceback):
     with tempfile.TemporaryDirectory() as dirpath:
         dirpath = pathlib.Path(dirpath)
         download_openmx(configuration, dirpath)
-        
+
         with attempt('parsing PAOs... ', include_traceback=traceback):
             basis_set = create_basis_set_from_directory(OpenmxBasisSet, label, dirpath)
 
         orbital_configurations = {}
-        
+
         for element, values in metadata.items():
             if basis_set.get_basis(element).md5 != values['md5']:
                 Group.objects.delete(basis_set.pk)
                 msg = f'md5 of PAO for element {element} does not match that of the metadata {values["md5"]}'
                 echo.echo_critical(msg)
-            
+
             orbital_configurations[element] = metadata[element]['orbital_configuration']
 
         basis_set.description = description

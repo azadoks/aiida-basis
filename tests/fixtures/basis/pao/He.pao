@@ -1,0 +1,6 @@
+AtomSpecies              2
+max.occupied.N           1
+valence.electron       2.0
+radial.cutoff.pao      8.0
+maxL.pao                 3
+num.pao                 15

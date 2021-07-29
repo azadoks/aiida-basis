@@ -3,16 +3,13 @@
 """Configuration and fixtures for unit test suite."""
 import io
 import os
-import re
-import shutil
 
 import click
 import pytest
 
 from aiida.plugins import DataFactory
 
-from aiida_pseudo.data.pseudo import PseudoPotentialData
-from aiida_pseudo.groups.family import PseudoPotentialFamily
+from aiida_basis.data.basis import BasisData
 
 pytest_plugins = ['aiida.manage.tests.pytest_fixtures']  # pylint: disable=invalid-name
 
@@ -73,109 +70,107 @@ def filepath_fixtures() -> str:
 
 
 @pytest.fixture
-def filepath_pseudos(filepath_fixtures):
-    """Return the absolute filepath to the directory containing the pseudo potential files.
+def filepath_basis(filepath_fixtures):
+    """Return the absolute filepath to the directory containing the basisfiles.
 
-    :return: absolute filepath to directory containing test pseudo potentials.
+    :return: absolute filepath to directory containing test basis.
     """
 
-    def _filepath_pseudos(entry_point='upf') -> str:
-        """Return the absolute filepath containing the pseudo potential files for a given entry point.
+    def _filepath_basis(entry_point='upf') -> str:
+        """Return the absolute filepath containing the basis files for a given entry point.
 
-        :param entry_point: pseudo potential data entry point
-        :return: filepath to folder containing pseudo files.
+        :param entry_point: basis data entry point
+        :return: filepath to folder containing basis files.
         """
-        return os.path.join(filepath_fixtures, 'pseudos', entry_point)
+        return os.path.join(filepath_fixtures, 'basis', entry_point)
 
-    return _filepath_pseudos
+    return _filepath_basis
 
 
 @pytest.fixture
-def get_pseudo_potential_data(filepath_pseudos):
-    """Return a factory for `PseudoPotentialData` nodes."""
+def get_basis_data(filepath_basis):
+    """Return a factory for `BasisData` nodes."""
 
-    def _get_pseudo_potential_data(element='Ar', entry_point=None) -> PseudoPotentialData:
-        """Return a `PseudoPotentialData` for the given element.
+    def _get_basis_data(element='Ar', entry_point=None) -> BasisData:
+        """Return a `BasisData` for the given element.
 
-        :param element: one of the elements for which there is a UPF test file available.
-        :return: the `PseudoPotentialData`
+        :param element: one of the elements for which there is a PAO test file available.
+        :return: the `BasisData`
         """
         if entry_point is None:
-            cls = DataFactory('pseudo')
-            pseudo = cls(io.BytesIO(b'content'), f'{element}.pseudo')
-            pseudo.element = element
+            cls = DataFactory('basis')
+            basis = cls(io.BytesIO(b'content'), f'{element}.basis')
+            basis.element = element
         else:
-            cls = DataFactory(f'pseudo.{entry_point}')
+            cls = DataFactory(f'basis.{entry_point}')
             filename = f'{element}.{entry_point}'
-            with open(os.path.join(filepath_pseudos(entry_point), filename), 'rb') as handle:
-                pseudo = cls(handle, filename)
+            with open(os.path.join(filepath_basis(entry_point), filename), 'rb') as handle:
+                basis = cls(handle, filename)
 
-        return pseudo
+        return basis
 
-    return _get_pseudo_potential_data
-
-
-@pytest.fixture
-def get_pseudo_family(tmpdir, filepath_pseudos):
-    """Return a factory for a `PseudoPotentialFamily` instance."""
-
-    def _get_pseudo_family(
-        label='family',
-        cls=PseudoPotentialFamily,
-        pseudo_type=PseudoPotentialData,
-        elements=None
-    ) -> PseudoPotentialFamily:
-        """Return an instance of `PseudoPotentialFamily` or subclass containing the given elements.
-
-        :param elements: optional list of elements to include instead of all the available ones
-        :return: the pseudo family
-        """
-        if elements is not None:
-            elements = {re.sub('[0-9]+', '', element) for element in elements}
-
-        if pseudo_type is PseudoPotentialData:
-            # There is no actual pseudopotential file fixtures for the base class, so default back to `.upf` files
-            extension = 'upf'
-        else:
-            extension = pseudo_type.get_entry_point_name()[len('pseudo.'):]
-
-        dirpath = filepath_pseudos(extension)
-
-        for pseudo in os.listdir(dirpath):
-            if elements is None or any([pseudo.startswith(element) for element in elements]):
-                shutil.copyfile(os.path.join(dirpath, pseudo), os.path.join(str(tmpdir), pseudo))
-
-        return cls.create_from_folder(str(tmpdir), label, pseudo_type=pseudo_type)
-
-    return _get_pseudo_family
+    return _get_basis_data
 
 
-@pytest.fixture
-def get_pseudo_archive(tmpdir, filepath_pseudos):
-    """Create an archive with pseudos."""
+# @pytest.fixture
+# def get_pseudo_family(tmpdir, filepath_basis):
+#     """Return a factory for a `PseudoPotentialFamily` instance."""
 
-    def _get_pseudo_archive(fmt='gztar'):
-        shutil.make_archive(str(tmpdir / 'archive'), fmt, filepath_pseudos('upf'))
-        filepath = os.path.join(str(tmpdir), os.listdir(str(tmpdir))[0])
-        yield filepath
+#     def _get_pseudo_family(
+#         label='family',
+#         cls=PseudoPotentialFamily,
+#         pseudo_type=PseudoPotentialData,
+#         elements=None
+#     ) -> PseudoPotentialFamily:
+#         """Return an instance of `PseudoPotentialFamily` or subclass containing the given elements.
 
-    return _get_pseudo_archive
+#         :param elements: optional list of elements to include instead of all the available ones
+#         :return: the pseudo family
+#         """
+#         if elements is not None:
+#             elements = {re.sub('[0-9]+', '', element) for element in elements}
 
+#         if pseudo_type is PseudoPotentialData:
+#             # There is no actual pseudopotential file fixtures for the base class, so default back to `.upf` files
+#             extension = 'upf'
+#         else:
+#             extension = pseudo_type.get_entry_point_name()[len('pseudo.'):]
 
-@pytest.fixture
-def generate_structure():
-    """Return a ``StructureData``."""
+#         dirpath = filepath_basis(extension)
 
-    def _generate_structure(elements=('Ar',)):
-        """Return a ``StructureData``."""
-        from aiida.orm import StructureData
+#         for pseudo in os.listdir(dirpath):
+#             if elements is None or any([pseudo.startswith(element) for element in elements]):
+#                 shutil.copyfile(os.path.join(dirpath, pseudo), os.path.join(str(tmpdir), pseudo))
 
-        structure = StructureData(cell=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+#         return cls.create_from_folder(str(tmpdir), label, pseudo_type=pseudo_type)
 
-        for index, element in enumerate(elements):
-            symbol = re.sub(r'[0-9]+', '', element)
-            structure.append_atom(position=(index * 0.5, index * 0.5, index * 0.5), symbols=symbol, name=element)
+#     return _get_pseudo_family
 
-        return structure
+# @pytest.fixture
+# def get_pseudo_archive(tmpdir, filepath_basis):
+#     """Create an archive with pseudos."""
 
-    return _generate_structure
+#     def _get_pseudo_archive(fmt='gztar'):
+#         shutil.make_archive(str(tmpdir / 'archive'), fmt, filepath_basis('upf'))
+#         filepath = os.path.join(str(tmpdir), os.listdir(str(tmpdir))[0])
+#         yield filepath
+
+#     return _get_pseudo_archive
+
+# @pytest.fixture
+# def generate_structure():
+#     """Return a ``StructureData``."""
+
+#     def _generate_structure(elements=('Ar',)):
+#         """Return a ``StructureData``."""
+#         from aiida.orm import StructureData
+
+#         structure = StructureData(cell=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+#         for index, element in enumerate(elements):
+#             symbol = re.sub(r'[0-9]+', '', element)
+#             structure.append_atom(position=(index * 0.5, index * 0.5, index * 0.5), symbols=symbol, name=element)
+
+#         return structure
+
+#     return _generate_structure

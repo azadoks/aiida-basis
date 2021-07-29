@@ -7,9 +7,7 @@ import click
 from aiida.cmdline.params.options import OverridableOption
 from .types import BasisSetTypeParam, BasisTypeParam
 
-__all__ = (
-    'VERSION', 'PROTOCOL', 'TRACEBACK', 'BASIS_SET_TYPE', 'ARCHIVE_FORMAT'
-)
+__all__ = ('VERSION', 'PROTOCOL', 'TRACEBACK', 'BASIS_SET_TYPE', 'ARCHIVE_FORMAT')
 
 VERSION = OverridableOption(
     '-v', '--version', type=click.STRING, required=False, help='Select the version of the installed configuration.'

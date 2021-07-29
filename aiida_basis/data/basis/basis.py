@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Base class for data types representing bases."""
+import io
 import typing
+import pathlib
 
 from aiida import orm
 from aiida import plugins
@@ -31,12 +33,13 @@ class BasisData(plugins.DataFactory('singlefile')):
         existing = query.first()
 
         if existing:
-            basis= existing[0]
+            basis = existing[0]
         else:
             stream.seek(0)
             basis = cls(stream, filename)
- 
+
         return basis
+
     @classmethod
     def get_entry_point_name(cls):
         """Return the entry point name associated with this data class.
@@ -46,6 +49,40 @@ class BasisData(plugins.DataFactory('singlefile')):
         from aiida.plugins.entry_point import get_entry_point_from_class
         _, entry_point = get_entry_point_from_class(cls.__module__, cls.__name__)
         return entry_point.name
+
+    @staticmethod
+    def is_readable_byte_stream(stream) -> bool:
+        """Return whether an object appears to be a readable filelike object in binary mode or stream of bytes.
+
+        :param stream: the object to analyse.
+        :returns: True if ``stream`` appears to be a readable filelike object in binary mode, False otherwise.
+        """
+        return (
+            isinstance(stream, io.BytesIO) or
+            (hasattr(stream, 'read') and hasattr(stream, 'mode') and 'b' in stream.mode)
+        )
+
+    @classmethod
+    def prepare_source(cls, source: typing.Union[str, pathlib.Path, typing.BinaryIO]) -> typing.BinaryIO:  # pylint: disable=unsubscriptable-object
+        """Validate the ``source`` representing a file on disk or a byte stream.
+
+        .. note:: if the ``source`` is a valid file on disk, its content is read and returned as a stream of bytes.
+
+        :raises TypeError: if the source is not a ``str``, ``pathlib.Path`` instance or binary stream.
+        :raises FileNotFoundError: if the source is a filepath but does not exist.
+        """
+        if not isinstance(source, (str, pathlib.Path)) and not cls.is_readable_byte_stream(source):
+            raise TypeError(
+                f'`source` should be a `str` or `pathlib.Path` filepath on disk or a stream of bytes, got: {source}'
+            )
+
+        if isinstance(source, (str, pathlib.Path)):
+            filename = pathlib.Path(source).name
+            with open(source, 'rb') as handle:
+                source = io.BytesIO(handle.read())
+                source.name = filename
+
+        return source
 
     @classmethod
     def validate_element(cls, element: str):
@@ -96,7 +133,7 @@ class BasisData(plugins.DataFactory('singlefile')):
         return super().store(**kwargs)
 
     @property
-    def element(self) -> typing.Union[str, None]:
+    def element(self) -> typing.Union[str, None]:  # pylint: disable=unsubscriptable-object
         """Return the element symbol.
 
         :return: the symbol of the element following the IUPAC naming standard or None if not defined.
@@ -114,7 +151,7 @@ class BasisData(plugins.DataFactory('singlefile')):
         self.set_attribute(self._key_element, value)
 
     @property
-    def md5(self) -> typing.Union[str, None]:
+    def md5(self) -> typing.Union[str, None]:  # pylint: disable=unsubscriptable-object
         """Return the md5.
 
         :return: the md5 of the stored file.
