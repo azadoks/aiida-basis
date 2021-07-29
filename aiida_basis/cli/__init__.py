@@ -7,5 +7,6 @@ import click_completion
 click_completion.init()
 
 from .root import cmd_root
+from .set import cmd_basis_set
 from .install import cmd_install, cmd_install_basis_set, cmd_install_openmx
 from .list import cmd_list

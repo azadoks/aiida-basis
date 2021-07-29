@@ -33,7 +33,7 @@ def attempt(message, exception_types=Exception, include_traceback=False):
 
 def create_basis_set_from_directory(cls, label, dirpath, basis_type=None):
     """Construct a new basis set instance from a directory.
-    
+
     .. warning:: the directory should not contain any subdirectories, just the basis files.
 
     :param cls: the basis set class to use, e.g. ``OpenmxBasisSet``
@@ -81,3 +81,19 @@ def create_basis_set_from_archive(cls, label, filepath_archive, fmt=None, basis_
         basis_set = create_basis_set_from_directory(cls, label, dirpath, basis_type)
 
     return basis_set
+
+
+def format_orbital_configuration(orbital_configuration: list) -> str:
+    """Prettily format an orbital configuration.
+
+    :param orbital_configuration: the list of the number of s, p, d and f orbitals.
+    :return: a nice string representation.
+    """
+    orbital_names = ['s', 'p', 'd', 'f']
+
+    orbital_configuration_string = ''
+    for orbital, name in zip(orbital_configuration, orbital_names):
+        if orbital > 0:
+            orbital_configuration_string += f'{name}{orbital}'
+
+    return orbital_configuration_string
